@@ -34,6 +34,7 @@ Pkg.add.(["IJulia", "WebIO", "Interact", "LaTeXStrings", "Plots", "LatinHypercub
 ```
 
 ## List of examples
+- [Multi-objective optimization of beam example](./Beam_example/) 
 - [Data fits using surrogate models](./data_fits/) 
 - Unconstrained optimization ([gradient descent](./Unc/) , [Rosenbrock](./Rosenbrock/))
 - [Linear programming example](./LP/) 
