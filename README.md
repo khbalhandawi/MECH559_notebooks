@@ -10,6 +10,7 @@
 	- Interact
 	- LaTeXStrings
 	- Plots
+	- PyPlot
 	- LatinHypercubeSampling
 	- MLBase
 	- Surrogates
@@ -48,12 +49,12 @@ use the following command to install all the prerequisite packages for this cour
 
 ```
 using Pkg
-Pkg.add.(["IJulia", "WebIO", "Interact", "LaTeXStrings", "Plots", "LatinHypercubeSampling", "MLBase", "Surrogates"])
+Pkg.add.(["IJulia", "WebIO", "Interact", "LaTeXStrings", "Plots", "PyPlot", "LatinHypercubeSampling", "MLBase", "Surrogates"])
 ```
 
 ## List of examples
 - [Multi-objective optimization of beam example](./1_Beam_example/) 
-- [Monotonicity theorem examples](./2_monotonicity/) 
+- [Monotonicity and extreme value theorem examples](./2_monotonicity_boundedness/) 
 - [Data fits using surrogate models](./3_data_fits/) 
 - Unconstrained optimization ([gradient descent](./Unc/) , [Rosenbrock](./Rosenbrock/))
 - [Linear programming example](./LP/) 
