@@ -52,10 +52,30 @@ using Pkg
 Pkg.add.(["IJulia", "WebIO", "Interact", "LaTeXStrings", "Plots", "PyPlot", "LatinHypercubeSampling", "MLBase", "Surrogates"])
 ```
 
+### Setting up your Python environment
+
+**MacOS/Linux**
+
+Create a virtual environment where you can install the required packages for this class locally
+
+```
+python -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
+```
+
+**Windows**
+```
+python -m venv .env
+.env\Scripts\activate
+pip install -r requirements.txt
+```
+
 ## List of examples
 - [Multi-objective optimization of beam example](./1_Beam_example/) 
 - [Monotonicity and extreme value theorem examples](./2_monotonicity_boundedness/) 
 - [Data fits using surrogate models](./3_data_fits/) 
+- [Concepts and example for unconstrained optimization](./4_unconstrained/) 
 - Unconstrained optimization ([gradient descent](./Unc/) , [Rosenbrock](./Rosenbrock/))
 - [Linear programming example](./LP/) 
 - [Reduced gradient visualization](<./Reduced Gradient/>) 
