@@ -49,7 +49,7 @@ use the following command to install all the prerequisite packages for this cour
 
 ```
 using Pkg
-Pkg.add.(["IJulia", "WebIO", "Interact", "LaTeXStrings", "Plots", "PyPlot", "LatinHypercubeSampling", "MLBase", "Surrogates"])
+Pkg.add.(["IJulia", "WebIO", "Interact", "LaTeXStrings", "Plots", "PyPlot", "LatinHypercubeSampling", "MLBase", "Surrogates", "CSV"])
 ```
 
 ### Setting up your Python environment
