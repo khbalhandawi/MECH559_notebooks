@@ -1,5 +1,5 @@
 module surrogate_models
-export Surrogate, train, basis, predict, Guassian
+export Surrogate, train, basis, predict, Guassian, scaling
 
 using LinearAlgebra
 import LinearAlgebra.norm
@@ -9,6 +9,9 @@ abstract type AbstractSurrogate{T} end
 mutable struct LS{T} <: AbstractSurrogate{T}
     X::Matrix{T}
     Y::Matrix{T}
+    lb::Vector{T}
+    ub::Vector{T}
+    scale::Bool
     r::T
     d::Int
     n_centers::Int
@@ -19,14 +22,17 @@ mutable struct LS{T} <: AbstractSurrogate{T}
     W::Matrix{T}
     J::Matrix{T}
 
-    function LS(::Type{T}=Float64; X::Matrix{T}, Y::Matrix{T}, r::T, d::Int) where T
+    function LS(::Type{T}=Float64; X::Matrix{T}, Y::Matrix{T}, lb::Vector{T}, ub::Vector{T}, r::T, d::Int, scale::Bool) where T
         
         ls = new{T}()
         ls.X = X
         ls.Y = Y
         ls.r = r
         ls.d = d
-        
+        ls.lb = lb
+        ls.ub = ub
+        ls.scale = scale
+
         # Dimensionality
         ls.n_centers = size(X,1)
         ls.dim_i = size(X,2)
@@ -80,12 +86,20 @@ function predict(m::LS{T}, Z::Matrix{T}) where T
     if m.isempty
         throw(DomainError(m,"model is not trained!"))
     end
+
+    if m.scale
+        Z = scaling(Z,m.lb,m.ub,1)
+    end
+    
     basis(m.d,Z,Polynomial)*m.W
 end
 
 mutable struct RBF{T} <: AbstractSurrogate{T}
     X::Matrix{T}
     Y::Matrix{T}
+    lb::Vector{T}
+    ub::Vector{T}
+    scale::Bool
     r::T
     λ::T
     kernel::Function
@@ -97,11 +111,14 @@ mutable struct RBF{T} <: AbstractSurrogate{T}
     W::Matrix{T}
     J::Matrix{T}
 
-    function RBF(::Type{T}=Float64; X::Matrix{T}, Y::Matrix{T}, r::T, λ::T, kernel::Function) where T
+    function RBF(::Type{T}=Float64; X::Matrix{T}, Y::Matrix{T}, lb::Vector{T}, ub::Vector{T}, r::T, λ::T, kernel::Function, scale::Bool) where T
         
         rbf = new{T}()
         rbf.X = X
         rbf.Y = Y
+        rbf.lb = lb
+        rbf.ub = ub
+        rbf.scale = scale
         rbf.r = r
         rbf.λ = λ
         rbf.kernel = kernel
@@ -158,6 +175,11 @@ function predict(m::RBF{T}, Z::Matrix{T}) where T
     if m.isempty
         throw(DomainError(m,"model is not trained!"))
     end
+
+    if m.scale
+        Z = scaling(Z,m.lb,m.ub,1)
+    end
+
     basis(m.λ,Z,m.X,m.kernel)*m.W
 end
     
@@ -168,10 +190,25 @@ mutable struct Surrogate{T}
     type::String
     model::AbstractSurrogate{T}
 
-    function Surrogate(::Type{T}=Float64; X::Matrix{T}, Y::Matrix{T}, type::String, r::T=1e-6, λ::T=15.0, d::Int=1, kernel::Function=Guassian, name::String = "") where T
+    function Surrogate(::Type{T}=Float64; X::Matrix{T}, Y::Matrix{T}, type::String, 
+        lb::Union{Vector{T}, Nothing}=nothing, ub::Union{Vector{T}, Nothing}=nothing, 
+        r::T=1e-6, λ::T=15.0, d::Int=1, kernel::Function=Guassian, scale::Bool=true, 
+        name::String = "") where T
 
         if size(X,1) != size(Y,1)
             throw(ArgumentError("number of training inputs does not match number of training outputs"))
+        end
+
+        if isnothing(lb)
+            lb = vec(minimum(X,dims=1))
+        end
+
+        if isnothing(ub)
+            ub = vec(maximum(X,dims=1))
+        end
+
+        if scale
+            X = scaling(X,lb,ub,1)
         end
 
         sur = new{T}()
@@ -179,15 +216,24 @@ mutable struct Surrogate{T}
         sur.name = name
 
         if type == "RBF"
-            sur.model = RBF(T, X=X , Y=Y, r=r, λ=λ, kernel=kernel)
+            sur.model = RBF(T, X=X , Y=Y, lb=lb, ub=ub, r=r, λ=λ, kernel=kernel, scale=scale)
         end
 
         if type == "LS"
-            sur.model = LS(T, X=X , Y=Y, r=r, d=d)
+            sur.model = LS(T, X=X , Y=Y, lb=lb, ub=ub, r=r, d=d, scale=scale)
         end
 
         return sur
     end
+end
+
+function scaling(X::Matrix{T}, lb::Vector{T}, ub::Vector{T}, type::Integer)::Matrix{T} where T
+    if type == 1
+        Xs = (X' .- lb)' ./ (ub - lb)'
+    elseif type == 2
+        Xs =  X .* (ub - lb)' .+ lb'
+    end
+    return Xs
 end
 
 end # module
