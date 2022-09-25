@@ -27,7 +27,7 @@ hold on
 plot(2,-4,'r+'), plot(-1,-1,'r+')
 
 % Choose method (gradient = 1, Newton = 2)
-method = 2;
+method = 1;
 
 % Ask for intitial guess
 %xold = input('Type initial guess as a column vector');
@@ -56,7 +56,7 @@ while my_continue == 0
     disp(['norm of gradient = ', num2str(norm(ex4grad(xnew)))])
     disp(['objective function value = ',num2str(ex4obj(xnew))])
     plot(xnew(1),xnew(2),'ro')
-    %pause
+    pause
     if norm(ex4grad(xnew)) <= my_epsilon
         my_continue = 1;
     end

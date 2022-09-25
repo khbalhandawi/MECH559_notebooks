@@ -29,7 +29,7 @@ clabel(cs)
 hold on
 
 % Choose method (gradient = 1, Newton = 2)
-method = 2;
+method = 1;
 
 % Ask for intitial guess
 %xold = input('Type initial guess as a column vector');
@@ -51,8 +51,8 @@ while my_continue == 0
        % Gradient method
        %pick alpha or use exact line search by commenting accordingly
        alpha = 0.01;
-       alpha = ex1grad(xold)*ex1grad(xold)'/ ...
-               (ex1grad(xold)*ex1hessian(xold)*ex1grad(xold)')
+%        alpha = ex1grad(xold)*ex1grad(xold)'/ ...
+%                (ex1grad(xold)*ex1hessian(xold)*ex1grad(xold)')
        xnew = xold - alpha*ex1grad(xold)'
     else
        % Newton's method (won't work because of singular Hessian)

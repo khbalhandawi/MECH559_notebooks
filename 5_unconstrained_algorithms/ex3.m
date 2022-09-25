@@ -4,7 +4,7 @@
 
 clear
 clc
-%close all
+close all
 clf
 
 x = -2:.1:5;
