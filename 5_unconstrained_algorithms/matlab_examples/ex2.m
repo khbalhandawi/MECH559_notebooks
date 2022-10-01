@@ -1,14 +1,14 @@
-% MECH 559 - M. Kokkolaras
+% MECH 559 - K. Al Handawi
 % McGill University
 % Example 4.16 in Papalambros and Wilde
 
 clear
 clc
-%close all
+close all
 clf
 
+% Visualization of the objective and iterates
 x1 = -2:.1:5;
-%x1 = 0:.01:2;
 x2=x1;
 for i=1:length(x1)
     for j = 1:length(x2)
@@ -16,55 +16,53 @@ for i=1:length(x1)
     end
 end
 
+% 3D plot
 figure(1)
 mesh(x1,x2,f)
 
+% contour plot
 figure(2)
 clf
 V = 0:1:20; 
 cs = contour(x1,x2,f,V); 
-clabel(cs)
+xlim([-2,5])
+ylim([-2,5])
 hold on
 
 % Choose method (gradient = 1, Newton = 2)
-method = 2;
+method = 1;
 
 % Ask for intitial guess
-%xold = input('Type initial guess as a column vector');
 xold = [-2 -2]'; 
 xold = [5 2]';
 xold = [5,5]';
-plot(xold(1),xold(2),'ro')
-disp(['objective function value = ',num2str(ex2obj(xold))])
 
+% algorithmic parameters
 my_epsilon = .001;
 kmax = 100;
+iteract = 1; % turn this off to avoid having to hit ENTER on every iteration
+verbose = 1; % turn this off to avoid having printing every iteration
+plot_progress = 1; % turn this off to avoid plotting every iteration
 
-my_continue = 0;
-k = 0;
-while my_continue == 0
-    k = k + 1
-    if method == 1
-       % Gradient method
-       %pick alpha or use exact line search by commenting accordingly
-       alpha = .1;
-       %alpha = ex2grad(xold)*ex2grad(xold)'/ ...
-               (ex2grad(xold)*ex2hessian(xold)*ex2grad(xold)')
-       xnew = xold - alpha*ex2grad(xold)'
-    else
-       % Newton's method 
-       alpha = 1;
-       xnew = xold - alpha*inv(ex2hessian(xold))*ex2grad(xold)'
-    end
-    disp(['norm of gradient = ', num2str(norm(ex2grad(xnew)))])
-    disp(['objective function value = ',num2str(ex2obj(xnew))])
-    plot(xnew(1),xnew(2),'ro')
-    if norm(ex2grad(xnew)) <= my_epsilon
-        my_continue = 1;
-    end
-    xold = xnew;
-    if k > kmax
-       my_continue = 1;
-       disp('maximum number of iteration reached')
-   end
+% optimization
+[x_opt,f_opt] = optimize(@obj,@grad,@hessian,method,xold,my_epsilon,kmax,iteract,verbose,plot_progress);
+
+% solution
+disp([' ']) % newline
+disp(['minimum function value = ',num2str(obj(x_opt))])
+disp(['minimizer value = ',sprintf('%0.5f, ',x_opt)])
+
+%% User defined objective, gradient, and hessian
+function g = grad(x)
+    g(1) = 8*x(1) + 3*x(2);
+    g(2) = 3*x(1) + 2*x(2);
+end
+
+function H = hessian(x)
+    H = [8 3
+         3 2];
+end
+
+function f = obj(x)
+    f = 4*x(1)^2 + 3*x(1)*x(2) + x(2)^2;
 end
