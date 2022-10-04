@@ -159,3 +159,6 @@ Manifest.toml
 #################################################################
 # Pictures and stuff
 *.pdf
+
+# MACOS
+.DS_Store

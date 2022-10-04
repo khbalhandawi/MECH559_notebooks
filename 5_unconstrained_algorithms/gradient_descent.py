@@ -4,6 +4,11 @@ import warnings
 from copy import copy
 
 from numpy.linalg import LinAlgError
+
+"""
+Gradient based optimization algorithms including `GradientDesc` and `ConjugateDesc`
+"""
+
 class Optimization():
 
     def __init__(self,f:Callable[[np.ndarray,], np.ndarray],grad_f:Callable[[np.ndarray,], np.ndarray],
@@ -27,6 +32,56 @@ class GradientDesc(Optimization):
         H_f:Callable[[np.ndarray,], np.ndarray]=None,x0:np.ndarray=np.array([[0.0,0.0]]),
         epsilon:float=0.1,beta:float=0.9,direction:str="steepest",alpha:float=1.0,line_search:str="armijo",
         hessian_approximation:str="BFGS",verbose:bool=False):
+        """
+        GradientDesc is class object used for defining various gradient descent algorithms. You must first
+        initialize an `instance` of this class like so:
+
+        ```
+        my_opt = GradientDesc(f,grad_f,H_f,x0)
+        x_opt,f_opt = my_opt.optimize(tol=1e-3,n_iterations=1000)
+        ```
+
+        my_opt stores the current iterate as an attribute `my_opt.xk`
+        You have several options below to control the behaviour of the optimizer 
+        and switch between gradient descent and newtons method
+
+        Parameters
+        ----------
+        f : Callable[[np.ndarray,], np.ndarray]
+            This is a function that contains the procedure to compute the objective
+            It takes a 2D array of size 1 x n, where n is the number of dimensions and returns a
+            1D array of values
+        grad_f : Callable[[np.ndarray,], np.ndarray]
+            This is a function that contains the procedure to compute the gradient
+            It takes a 2D array of size 1 x n, where n is the number of dimensions and returns a
+            3D array of size n x 1 x 1 
+        H_f : Callable[[np.ndarray,], np.ndarray], optional
+            This is a function that contains the procedure to compute the Hessian
+            It takes a 2D array of size 1 x n, where n is the number of dimensions and returns a
+            3D array of size n x n x 1, by default None
+        x0 : np.ndarray, optional
+            Your initial guess. It should be 2D array of size 1 x n, where n is the number of dimensions
+            , by default np.array([[0.0,0.0]])
+        epsilon : float, optional
+            epsilon used during Armijo line search, by default 0.1
+        beta : float, optional
+            beta used during Armijo line search, by default 0.9
+        direction : str, optional
+            Possible values are ("steepest", "newton"). If "steepest" is used then the 
+            direction is the negative of the gradient. If "newton" is used then the 
+            direction is adjusted by the inverse Hessian, by default "steepest"
+        alpha : float, optional
+            Initial step size used during line search (modified during line search), by default 1.0
+        line_search : str, optional
+            Possible values are ("armijo", "exact", "fixed"). If "armijo" is used then `alpha` 
+            is adjusted by Armijo line search. If "exact" is used then the 
+            direction is adjusted by the exact line search. If "fixed" is used,
+            alpha remains as is throughout the iterations, by default "armijo"
+        hessian_approximation : str, optional
+            Whether to use exact inverse of hessian or approximate it using BFGS, by default "BFGS"
+        verbose : bool, optional
+            If True prints the optimization progress to console, by default False
+        """
 
         super().__init__(f,grad_f,H_f,x0,verbose)
 
@@ -71,6 +126,15 @@ class GradientDesc(Optimization):
             n += 1
         
     def step(self) -> Tuple[float,float]:
+        """
+        Performs only one iteration of gradient descent
+
+        Returns
+        -------
+        Tuple[float,float]
+            A tuple containing: the norm of the gradient,
+            the mean squared error in BFGS estimates
+        """
 
         norm_df = np.linalg.norm(self.grad_f(self.xk).squeeze(axis=2))
 
@@ -132,11 +196,28 @@ class GradientDesc(Optimization):
         return norm_df,error_BFGS
 
     def optimize(self,tol:float=1e-6,n_iterations:int=1000) -> Tuple[np.ndarray,float]:
+        """
+        Performs an optimization run until termination
+
+        Parameters
+        ----------
+        tol : float, optional
+            the minimum norm of the gradient at which termination occurs, by default 1e-6
+        n_iterations : int, optional
+            the maximum number of iterations at which termination occurs, by default 1000
+
+        Returns
+        -------
+        Tuple[np.ndarray,float]
+            A tuple containing the number of iterations, termination point xk 
+            and its corresponding objective value
+        """
+
         k = 0
         while True:
             norm_df,_ = self.step()
             if norm_df <= tol or k >= n_iterations:
-                return self.xk,self.fk
+                return k,self.xk,self.fk
             k += 1
 
 
@@ -144,6 +225,39 @@ class ConjugateDesc(Optimization):
 
     def __init__(self,f:Callable[[np.ndarray,], np.ndarray],grad_f:Callable[[np.ndarray,], np.ndarray],
         H_f:Callable[[np.ndarray,], np.ndarray]=None,x0:np.ndarray=np.array([[0.0,0.0]]),verbose:bool=False):
+        """
+        GradientDesc is class object used for defining various gradient descent algorithms. You must first
+        initialize an `instance` of this class like so:
+
+        ```
+        my_opt = GradientDesc(f,grad_f,H_f,x0)
+        x_opt,f_opt = my_opt.optimize(tol=1e-3,n_iterations=1000)
+        ```
+
+        my_opt stores the current iterate as an attribute `my_opt.xk`
+        You have several options below to control the behaviour of the optimizer 
+        and switch between gradient descent and newtons method
+
+        Parameters
+        ----------
+        f : Callable[[np.ndarray,], np.ndarray]
+            This is a function that contains the procedure to compute the objective
+            It takes a 2D array of size 1 x n, where n is the number of dimensions and returns a
+            1D array of values
+        grad_f : Callable[[np.ndarray,], np.ndarray]
+            This is a function that contains the procedure to compute the gradient
+            It takes a 2D array of size 1 x n, where n is the number of dimensions and returns a
+            3D array of size n x 1 x 1 
+        H_f : Callable[[np.ndarray,], np.ndarray], optional
+            This is a function that contains the procedure to compute the Hessian
+            It takes a 2D array of size 1 x n, where n is the number of dimensions and returns a
+            3D array of size n x n x 1, by default None
+        x0 : np.ndarray, optional
+            Your initial guess. It should be 2D array of size 1 x n, where n is the number of dimensions
+            , by default np.array([[0.0,0.0]])
+        verbose : bool, optional
+            If True prints the optimization progress to console, by default False
+        """
 
         super().__init__(f,grad_f,H_f,x0,verbose)
 
@@ -153,6 +267,14 @@ class ConjugateDesc(Optimization):
         self.beta_k = 0.0
         
     def step(self) -> float:
+        """
+        Performs only one iteration of gradient descent
+
+        Returns
+        -------
+        float
+            the norm of the gradient
+        """
 
         norm_df = np.linalg.norm(self.grad_f(self.xk).squeeze(axis=2))      
 
@@ -182,10 +304,27 @@ class ConjugateDesc(Optimization):
 
         return norm_df
 
-    def optimize(self,tol:float=1e-6,n_iterations:int=1000) -> Tuple[np.ndarray,float]:
+    def optimize(self,tol:float=1e-6,n_iterations:int=1000) -> Tuple[float,np.ndarray,float]:
+        """
+        Performs an optimization run until termination
+
+        Parameters
+        ----------
+        tol : float, optional
+            the minimum norm of the gradient at which termination occurs, by default 1e-6
+        n_iterations : int, optional
+            the maximum number of iterations at which termination occurs, by default 1000
+
+        Returns
+        -------
+        Tuple[np.ndarray,float]
+            A tuple containing the number of iterations, termination point xk 
+            and its corresponding objective value
+        """
+
         k = 0
         while True:
             self.step()
             if np.linalg.norm(self.gk) <= tol or k >= n_iterations:
-                return self.xk,self.fk
+                return k,self.xk,self.fk
             k += 1
