@@ -6,27 +6,27 @@ clear all
 close all
 
 % vector of objective function coefficients
-c = [-1 1]; % not bounded (bottom right)
-%c = -c; % bounded (top left)
+% c = [-1 1]; % not bounded (bottom right)
+c = [1 -1]; % bounded (top left)
 %c = [-4 8/7]; % parallel
 %Matrix of linear inequality constraints
 A = [2  3; -5 -2; -2 7];
-%A = [2  3; -5 -2; 2 -7];
+% A = [2  3; -5 -2; 2 -7];
 %right hand side of linear inequality constraints
 b = [10; -2; 8];
 %b = [10; -2; -8];
 
-my_options = optimoptions('linprog');
-%my_options = optimoptions('linprog','Display','iter');
+% my_options = optimoptions('linprog');
+my_options = optimoptions('linprog','Display','iter');
 %my_options = optimoptions('linprog','Algorithm','interior-point','Display','iter');
 
 xopt = linprog(c,A,b)
 
 %pause
 
-n=51;
+n=150;
 n1=5;
-x=linspace(-n1,n1,n)
+x=linspace(-n1,n1,n);
 y=linspace(-n1,n1,n);
 
 size(x);
