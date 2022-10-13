@@ -77,7 +77,7 @@ pip install -r requirements.txt
 - [Data fits using surrogate models](./3_data_fits/) 
 - [Concepts and examples for unconstrained optimization (FONCs, SOSCs)](./4_unconstrained/) 
 - [Unconstrained optimization algorithms (Gradient descent and variants)](./5_unconstrained_algorithms/)
-- [Linear programming example](./LP/) 
+- [Linear programming examples](./6_linear_programming/) 
 - [Reduced gradient visualization](<./Reduced Gradient/>) 
 - [Augmented Lagrangian Example](./AUgmentedLagrangianExample/) 
 - [Nonlinear programming examples](./NLPexample/) 

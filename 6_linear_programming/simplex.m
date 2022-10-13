@@ -1,11 +1,9 @@
-function [x_opt,stop,A,b,c,k] = simplex(A,b,c,k,verbose)
+function [x_opt,stop,A,b,c] = simplex(A,b,c)
     %simplex: performs a single simplex iteration
     % INPUTS
     %   A: The coefficient matrix A
     %   b: the solution vector b
     %   c: the objective vector c
-    %   k: iteration number
-    %   verbose; true/false if true prints the outputs
     % OUTPUTS
     %   x_opt: The optimal variable values
     %   stop: a flag informing the user that no further 
@@ -13,12 +11,6 @@ function [x_opt,stop,A,b,c,k] = simplex(A,b,c,k,verbose)
     %   A: The coefficient matrix A
     %   b: the solution vector b
     %   c: the objective vector c
-    %   k: iteration number
-    %   verbose; true/false if true prints the outputs
-
-    if nargin == 3
-        verbose = true;
-    end
     
     ss = size(A);
 
@@ -28,11 +20,6 @@ function [x_opt,stop,A,b,c,k] = simplex(A,b,c,k,verbose)
         if c(j) == 0
             x_opt(j) = max(A(:,j)'*b,0);
         end
-    end
-
-    if verbose
-        fprintf('iteration = %d\n',k)
-        A, c, b, x_opt
     end
 
     [j,q] = min(c); % pivot column
@@ -58,14 +45,13 @@ function [x_opt,stop,A,b,c,k] = simplex(A,b,c,k,verbose)
             end
 
             stop = false;
-            k=k+1;
         else
-            fprintf('Problem is unbounded at iteration = %d\n',k)
+            fprintf('Problem is unbounded!\n')
             x_opt = Inf*ones(ss(2),1);
             stop = true;
         end
     else
-        fprintf('solution terminated at iteration = %d\n',k)
+        fprintf('solution terminated!\n')
         stop = true;
     end
 end
