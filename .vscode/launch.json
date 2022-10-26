@@ -5,13 +5,46 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "type": "julia",
+            "name": "C/C++: g++ build and debug active file",
+            "type": "cppdbg",
             "request": "launch",
-            "name": "Run active Julia file",
-            "stopOnEntry": true,
-            "cwd": "${workspaceFolder}/",
-            "program": "${workspaceFolder}/${relativeFile}",
-            "juliaEnv": "${command:activeJuliaEnvironment}"
-        }
+            "program": "${workspaceFolder}/9_dfo/bb",
+            "args": ["-x", "1.0", "2.0", 
+                "-p", "8", "-4", "-3", "-3", "-3", "3", "2", "0.8", 
+                "-v", "-G"],
+            "stopAtEntry": false,
+            "cwd": "${fileDirname}",
+            "environment": [],
+            "externalConsole": false,
+            "MIMode": "gdb",
+            "setupCommands": [
+                {
+                    "description": "Enable pretty-printing for gdb",
+                    "text": "-enable-pretty-printing",
+                    "ignoreFailures": true
+                },
+                {
+                    "description": "Set Disassembly Flavor to Intel",
+                    "text": "-gdb-set disassembly-flavor intel",
+                    "ignoreFailures": true
+                }
+            ],
+            "preLaunchTask": "C/C++: g++ build Debug bb.exe file",
+            "miDebuggerPath": "/usr/bin/gdb"
+        },
+        {
+            "name": "C/C++: cl.exe build and debug active file",
+            "type": "cppvsdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}\\9_dfo\\bb.exe",
+            "args": ["-x", "1.0", "2.0", 
+                "-p", "8", "-4", "-3", "-3", "-3", "3", "2", "0.8", 
+                "-v", "-G"],
+            "stopAtEntry": false,
+            "cwd": "${workspaceFolder}",
+            "environment": [],
+            "console": "integratedTerminal",
+            "preLaunchTask": "C/C++: cl.exe build Debug bb.exe file",
+          }
     ]
 }
