@@ -1,10 +1,23 @@
-### MECH 559 examples
+# MECH 559 examples
+## List of examples
+- [Multi-objective optimization of beam example](./1_Beam_example/) 
+- [Monotonicity and extreme value theorem examples](./2_monotonicity_boundedness/) 
+- [Data fits using surrogate models](./3_data_fits/) 
+- [Concepts and examples for unconstrained optimization (FONCs, SOSCs)](./4_unconstrained/) 
+- [Unconstrained optimization algorithms (Gradient descent and variants)](./5_unconstrained_algorithms/)
+- [Linear programming examples](./6_linear_programming/) 
+- [Non linear programming examples (KKT conditions and regular points)](<./7_nonlinear_programming/>) 
+- [Non linear programming algorithms and examples](./8_nonlinear_programming_algorithms/) 
+- [Derivative free optimization examples](./9_dfo/) 
+- [Source files for compiling a blackbox](./Blackbox_files/)
 
 ## Prerequisites
-- MATLAB (2019) or later
-	- With the ``Optimization Toolbox``
+- MATLAB (2019) or later with
+	- ``Optimization Toolbox``
+	- ``Global Optimization Toolbox``
+	- ``Symbolic Math Toolbox``
 
-- Julia 1.7 or later
+- Julia 1.7 or later with
 	- IJulia
 	- WebIO
 	- Interact
@@ -14,6 +27,9 @@
 	- LatinHypercubeSampling
 	- MLBase
 	- Surrogates
+	- CSV
+
+- Python 3.8 or later with dependencies in [requirements.txt](./requirements.txt)
 
 ### Installing Jupyter
 
@@ -70,15 +86,3 @@ python -m venv .env
 .env\Scripts\activate
 pip install -r requirements.txt
 ```
-
-## List of examples
-- [Multi-objective optimization of beam example](./1_Beam_example/) 
-- [Monotonicity and extreme value theorem examples](./2_monotonicity_boundedness/) 
-- [Data fits using surrogate models](./3_data_fits/) 
-- [Concepts and examples for unconstrained optimization (FONCs, SOSCs)](./4_unconstrained/) 
-- [Unconstrained optimization algorithms (Gradient descent and variants)](./5_unconstrained_algorithms/)
-- [Linear programming examples](./6_linear_programming/) 
-- [Non linear programming examples (KKT conditions and regular points)](<./7_nonlinear_programming/>) 
-- [Non linear programming algorithms and examples](./8_nonlinear_programming_algorithms/) 
-- [Derivative free optimization examples](./9_dfo/) 
-- [Source files for compiling a blackbox](./Blackbox_files/)

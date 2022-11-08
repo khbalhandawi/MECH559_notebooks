@@ -40,9 +40,11 @@ def system_command(command):
 
 def Blackbox_call(x, *argv):
 
-    # load parameters
-    with open("bb_parameters.json","r") as file:
-        bb_params = json.load(file)
+    # # load parameters
+    # with open("bb_parameters.json","r") as file:
+    #     bb_params = json.load(file)
+
+    bb_params = argv[0] # retrieve the blackbox parameters vector p, and other blackbox options
 
     # %% Run Blackbox
 
@@ -74,7 +76,7 @@ def Blackbox_call(x, *argv):
         #####################
         # Surrogate model
         #####################
-        sm = Kriging(type="load", xfile=bb_params["xfile"], yfile=bb_params["yfile"], options={}, model_db=bb_params["sur_model"]) # use this to load a trained model
+        sm = bb_params["sur_model"] # use this to load a trained model
         sm.x.points = np.array(x).reshape(-1,2)
         sm.predict()
         f = float(sm.yp.points[0,0])
