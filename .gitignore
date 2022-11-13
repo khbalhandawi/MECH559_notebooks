@@ -228,3 +228,11 @@ build/
 # 3rd party libraries (SML)
 *.db
 */post/*
+post/
+
+#################################################################
+# generated latex files
+*.tex
+*.tikz
+*.aux
+*.synctex.gz

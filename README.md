@@ -9,6 +9,7 @@
 - [Non linear programming examples (KKT conditions and regular points)](<./7_nonlinear_programming/>) 
 - [Non linear programming algorithms and examples](./8_nonlinear_programming_algorithms/) 
 - [Derivative free optimization examples](./9_dfo/) 
+- [Multi-disciplinary optimization (MDO) and Multi-disciplinary analysis (MDA) examples](./10_mdo/) 
 - [Source files for compiling a blackbox](./Blackbox_files/)
 
 ## Prerequisites
