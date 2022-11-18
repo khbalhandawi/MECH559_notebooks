@@ -66,8 +66,7 @@ class ATC():
         self.F_total = 0.
         self.phi_old = [0.,]*self.n_disciplines
         self.phi = [0.,]*self.n_disciplines
-        self.k_sys = 0
-        self.k_disp = [0,]*self.n_disciplines
+        self.n_evaluations = [0,]*(self.n_disciplines+1)
 
         self.opt_options = {
             "seed": 0, "budget": 100000, "tol": 1e-12, 
@@ -90,9 +89,7 @@ class ATC():
     def penalty(self,ci:np.ndarray,v,w):
         return v.T @ np.abs(ci) + np.linalg.norm(w*ci)**2
 
-    def bb_sys(self,vars,params):
-
-        self:ATC = get_by_address(params[0])[0]
+    def bb_sys(self,vars):
 
         x0 = np.array(vars[:self.n_shared]) # shared variables (x_0) and state targets (u^t)
         ut_flat = vars[self.n_shared:] # shared variables (x_0) and state targets (u^t)
@@ -118,14 +115,14 @@ class ATC():
                 self.penalty(ut[i] - ui, self.vu[i], self.wu[i])
             f += phi_i
 
-        self.k_sys += 1
+        self.n_evaluations[0] += 1 # update iteration counter
 
         return [f,g]
 
     def bb_i(self,vars,params):
 
         i = params[0]
-        self:ATC = get_by_address(params[1])[0]
+        # self:ATC = get_by_address(params[1])[0]
         # i is the discipline index
         x0it = np.array(vars[:self.n_shared]) # shared targets (x_0,i^t)
         xi = np.array(vars[self.n_shared:]) # local variables (x_i)
@@ -134,15 +131,7 @@ class ATC():
         discipline_i = self.disciplines[i]
         u_hat = discipline_i(x0it,xi,self.ut) # estimate coupling variables
 
-        # global objective
-        xi_all = self.xi.copy(); xi_all[i] = xi
-        u_all = self.ut.copy(); u_all[i] = u_hat
-        if callable(self.f_global):
-            f = self.f_global(x0it,xi_all,u_all).astype("float64") # to avoid float128 dtype errors
-        else:
-            f = self.f_global
         f = 0
-
         # local objective
         if callable(self.f_local[i]):
             f += self.f_local[i](x0it,xi,u_hat).astype("float64") # to avoid float128 dtype errors
@@ -162,9 +151,9 @@ class ATC():
             self.penalty(self.ut[i] - u_hat,self.vu[i],self.wu[i])
         f += phi_i
 
-        self.k_disp[i] += 1 # update iteration counter
+        self.n_evaluations[i+1] += 1 # update iteration counter
 
-        return [f,g] # to avoid float128 dtype errors
+        return [f,g]
 
     def opt_bb_discipline(self,i,opt_options):
 
@@ -176,7 +165,7 @@ class ATC():
         lb = self.lbs + self.lbi[i] # lower bound of shared and local variable
         ub = self.ubs + self.ubi[i] # upper bound of shared and local variable
 
-        eval = {"blackbox": self.bb_i, "constants": [i,id(self)]}
+        eval = {"blackbox": self.bb_i, "constants": [i,]}
         x0it_labels = ["x_{0,%i,%i}^t"%(i+1,k+1) for k in range(len(x0it_init))]
         xi_labels = ["x_{%i,%i}"%(i+1,k+1) for k in range(len(xi_init))]
 
@@ -202,15 +191,6 @@ class ATC():
 
         self.u[i] = u_hat # update state variable estimate globally
 
-        # # update penalties
-        # phi_i = self.penalty(x0it - self.x0,i) + self.penalty(self.ut[i] - u_hat,i)
-        # self.phi_old[i] = self.phi[i]
-        # self.phi[i] = phi_i
-
-        # # update inconsistencies
-        # self.cu[i] = self.ut[i] - u_hat
-        # self.cx0[i] = x0it - self.x0
-
     def opt_sys(self,opt_options):
 
         # Optimization setup
@@ -223,7 +203,7 @@ class ATC():
         lb = self.lbs + flat_lbu # lower bound of shared and state variables
         ub = self.ubs + flat_ubu # upper bound of shared and state variables
 
-        eval = {"blackbox": self.bb_sys, "constants": [id(self),]}
+        eval = {"blackbox": self.bb_sys}
         x0_labels = ["x_{0,%i}"%(k+1) for k in range(len(x0_init))]
         u_labels =  ["u_%i,%i^t" %(i+1,k+1) for i,sublist in enumerate(self.u_init) for k,item in enumerate(sublist)]
         param = {"baseline": x_init,
@@ -261,22 +241,6 @@ class ATC():
         
         k_outer = 0
         while True:
-            k_inner = 0
-            # while True:
-            #     # run sub-system optimization first
-            #     for i in range(self.n_disciplines):
-            #         self.opt_bb_discipline(i,self.opt_options)
-
-            #     # run the system optimization loop
-            #     self.F_total = self.opt_sys(self.opt_options)
-
-            #     # check inner loop convergence
-            #     if k_inner > 1:
-            #         if k_inner > k_max_inner or np.abs(self.F_total - self.F_total_old) / (np.abs(self.F_total) + 1) <= tol_outer:
-            #             break
-
-            #     self.F_total_old = self.F_total
-            #     k_inner += 1
 
             # run sub-system optimization first
             for i in range(self.n_disciplines):
@@ -291,7 +255,7 @@ class ATC():
                 if k_outer > k_max or max([abs(ci) for ci in c_vector]) <= tol:
                     break
 
-            # update penalty
+            # update penalty weights
             for i in range(self.n_disciplines):
                 self.vx0[i] += 2*((self.wx0[i])**2)*np.abs(self.cx0[i])
                 cond = np.abs(self.cx0[i]) > self.gamma*np.abs(self.cx0_old[i])
@@ -305,8 +269,8 @@ class ATC():
 
             k_outer += 1 # update iteration counter
 
-        # retrieve local variables (x_i), shared targets (x_0,i^t), and state variables (u)
-        f = self.f_global(self.x0,self.xi,self.u)
+        # retrieve local variables (x_i), shared variables (x_0), and state variables (u)
+        f = self.f_global(self.x0,self.xi,self.u) # calculate global objective
 
         print("ATC terminated")
 
@@ -347,8 +311,7 @@ class ATC():
             _copy.F_total = self.F_total
             _copy.phi_old = self.phi_old
             _copy.phi = self.phi
-            _copy.k_sys = self.k_sys
-            _copy.k_disp = self.k_disp
+            _copy.n_evaluations = self.n_evaluations
 
             memo[id_self] = _copy 
         return _copy

@@ -233,6 +233,7 @@ post/
 #################################################################
 # generated latex files
 *.tex
+!mdo_intro.tex
 *.tikz
 *.aux
 *.synctex.gz
