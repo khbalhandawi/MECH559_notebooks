@@ -446,7 +446,7 @@ from an aerodynamic analysis and are related to the computational fluid
 dynamics state variables \(\hat{\Gamma}\). In this example,
 \(\hat{\Gamma}\) is the circulation vortex strength on a wing. The hat
 denotes that these values are estimates of the state variables when the
-analysis has converged.
+analysis has converged and are called \emph{coupling variables}.
 
 \begin{equation}
 K\mathbf{d} - \mathbf{q}(\hat{\Gamma}) = \mathbf{0}
@@ -491,8 +491,9 @@ The residual for this discipline becomes
 where \(\mathcal{U}_2(\hat{\mathbf{d}})\) involves solving Equation (2)
 for the circulation vortex strength \(\Gamma\).
 
-The estimate \(\hat{\Gamma}\) is passed back to the aerodynamic
-analysis. The previous analysis can be described by the diagram below.
+The estimated coupling variable \(\hat{\Gamma}\) is passed back to the
+aerodynamic analysis. The previous analysis can be described by the
+diagram below.
 
 \begin{longtable}[]{@{}c@{}}
 \toprule
@@ -690,7 +691,7 @@ solver}\label{the-reduced-space-hierarchical-newton-solver}}
 
 This algorithm is unequivocally also called \emph{Newton's Method}. As
 with the Newton-Raphson algorithm, it requires derivative information to
-find the state variables \(\hat{a}\) and \(\hat{b}\) at which
+find the coupling variables \(\hat{a}\) and \(\hat{b}\) at which
 convergence occurs. The algorithm goes something like this:
 
 \begin{enumerate}
@@ -703,12 +704,12 @@ convergence occurs. The algorithm goes something like this:
   we solve discipline 1 for \(\hat{a}\). We also find the gradient of
   the discipline analysis \(\mathcal{U}(\hat{b})\) with respect to
   \(\hat{b}\). In other words,
-  \(\dfrac{\partial\mathcal{U}_1}{\partial\hat{b}}\) (all state
+  \(\dfrac{\partial\mathcal{U}_1}{\partial\hat{b}}\) (all coupling
   variables except \(\hat{a}\))
 \item
   In parallel, we solve discipline 2 for \(\hat{b}\). We also find the
   gradient with respect to \(\hat{a}\),
-  \(\dfrac{\partial\mathcal{U}_2}{\partial\hat{b}}\) (all state
+  \(\dfrac{\partial\mathcal{U}_2}{\partial\hat{b}}\) (all coupling
   variables except \(\hat{b}\))
 \item
   We solve the following system of equations for \(\Delta\hat{a}\) and
@@ -807,7 +808,7 @@ yourself!
 
 However, we had to provide the Jacobian of the analysis functions
 \(\dfrac{\partial\mathcal{U}}{\partial\hat{\mathbf{u}}}\) with respect
-to the state variables
+to the coupling variables
 \(\hat{\mathbf{u}} = \begin{bmatrix} \hat{a} & \hat{b} \end{bmatrix}^\mathrm{T}\)
 for the solver to converge. When \(\mathcal{U}_1\) and \(\mathcal{U}_2\)
 are blackboxes (as in the aerostructural problem at the beginning of
@@ -1058,8 +1059,8 @@ optimization}\label{individual-disciplinary-feasible-idf-optimization}}
 We can do away with MDA by letting the optimization algorithm handle to
 the convergence of the disciplines (i.e., coordinate their solutions).
 This is done by creating new variables \(\mathbf{u}^t\) known as
-\emph{target variables}. They are essentially a copy of the actual state
-variables. We then introduce consistency constraints
+\emph{target variables}. They are essentially a copy of the actual
+coupling variables. We then introduce consistency constraints
 \(\mathbf{h}_c = \mathbf{u}^t - \mathbf{u} = \mathbf{0}\) to the
 original optimization problem. The original optimization problem in
 Equation (3) becomes:
@@ -1083,7 +1084,7 @@ Equation (3) becomes:
 
 Notice that the optimization algorithm must now control 5 variables
 simultaneously and has two additional equality constraints to worry
-about. If those copies of the state variables were displacement and
+about. If those copies of the coupling variables were displacement and
 vortex fields from the aerostructural problem, the optimization
 algorithm must control tens of thousands of variables and might go
 bananas.
@@ -1104,7 +1105,7 @@ using \texttt{OMADS}. We first define the blackbox associated with IDF.
     \PY{n}{u\PYZus{}hat} \PY{o}{=} \PY{n}{np}\PY{o}{.}\PY{n}{zeros}\PY{p}{(}\PY{n+nb}{len}\PY{p}{(}\PY{n}{disciplines}\PY{p}{)}\PY{p}{)}
     \PY{k}{for} \PY{n}{i}\PY{p}{,}\PY{n}{discipline} \PY{o+ow}{in} \PY{n+nb}{enumerate}\PY{p}{(}\PY{n}{disciplines}\PY{p}{)}\PY{p}{:}
         \PY{n}{mask} \PY{o}{=} \PY{p}{[}\PY{k+kc}{True}\PY{p}{,}\PY{p}{]}\PY{o}{*}\PY{n+nb}{len}\PY{p}{(}\PY{n}{disciplines}\PY{p}{)}
-        \PY{n}{mask}\PY{p}{[}\PY{n}{i}\PY{p}{]} \PY{o}{=} \PY{k+kc}{False} \PY{c+c1}{\PYZsh{} select all state variables but current one}
+        \PY{n}{mask}\PY{p}{[}\PY{n}{i}\PY{p}{]} \PY{o}{=} \PY{k+kc}{False} \PY{c+c1}{\PYZsh{} select all coupling variables but current one}
         \PY{n}{u\PYZus{}hat}\PY{p}{[}\PY{n}{i}\PY{p}{]} \PY{o}{=} \PY{n}{discipline}\PY{p}{(}\PY{n}{x}\PY{p}{,}\PY{n}{ut}\PY{p}{[}\PY{n}{mask}\PY{p}{]}\PY{p}{)} \PY{c+c1}{\PYZsh{} estimate coupling variables}
 
     \PY{n}{f} \PY{o}{=} \PY{n}{x}\PY{p}{[}\PY{l+m+mi}{0}\PY{p}{]} \PY{o}{+} \PY{n}{x}\PY{p}{[}\PY{l+m+mi}{1}\PY{p}{]} \PY{o}{+} \PY{n}{u\PYZus{}hat}\PY{p}{[}\PY{l+m+mi}{0}\PY{p}{]} \PY{o}{+} \PY{n}{u\PYZus{}hat}\PY{p}{[}\PY{l+m+mi}{1}\PY{p}{]}
@@ -1149,7 +1150,7 @@ since \texttt{OMADS} does not yet support equality constraints.
 
 \PY{n}{out} \PY{o}{=} \PY{n}{OMADS}\PY{o}{.}\PY{n}{main}\PY{p}{(}\PY{n}{data}\PY{p}{)}
 \PY{n}{fopt}\PY{p}{,}\PY{n}{gopt} \PY{o}{=} \PY{n}{my\PYZus{}bb}\PY{p}{(}\PY{n}{out}\PY{p}{[}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{xmin}\PY{l+s+s2}{\PYZdq{}}\PY{p}{]}\PY{p}{,}\PY{n}{args}\PY{o}{=}\PY{p}{[}\PY{n}{disciplines}\PY{p}{]}\PY{p}{)} \PY{c+c1}{\PYZsh{} evaluate blackbox at optimizer}
-\PY{n}{uopt} \PY{o}{=} \PY{n}{my\PYZus{}MDA}\PY{p}{(}\PY{n}{out}\PY{p}{[}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{xmin}\PY{l+s+s2}{\PYZdq{}}\PY{p}{]}\PY{p}{[}\PY{p}{:}\PY{l+m+mi}{3}\PY{p}{]}\PY{p}{,}\PY{n}{state0}\PY{p}{,}\PY{n}{disciplines}\PY{p}{,}\PY{n}{Jacobians}\PY{p}{)} \PY{c+c1}{\PYZsh{} evaluate MDA at optimizer to check the true state variables}
+\PY{n}{uopt} \PY{o}{=} \PY{n}{my\PYZus{}MDA}\PY{p}{(}\PY{n}{out}\PY{p}{[}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{xmin}\PY{l+s+s2}{\PYZdq{}}\PY{p}{]}\PY{p}{[}\PY{p}{:}\PY{l+m+mi}{3}\PY{p}{]}\PY{p}{,}\PY{n}{state0}\PY{p}{,}\PY{n}{disciplines}\PY{p}{,}\PY{n}{Jacobians}\PY{p}{)} \PY{c+c1}{\PYZsh{} evaluate MDA at optimizer to check the true coupling variables}
 
 \PY{k+kn}{import} \PY{n+nn}{json}
 \PY{k}{for} \PY{n}{key}\PY{p}{,}\PY{n}{value} \PY{o+ow}{in} \PY{n}{out}\PY{o}{.}\PY{n}{items}\PY{p}{(}\PY{p}{)}\PY{p}{:}
@@ -1170,6 +1171,8 @@ since \texttt{OMADS} does not yet support equality constraints.
 \PY{c+c1}{\PYZsh{} print(f\PYZus{}tex)}
 \PY{c+c1}{\PYZsh{} print(x\PYZus{}tex)}
 \PY{c+c1}{\PYZsh{} print(g\PYZus{}tex)}
+\PY{c+c1}{\PYZsh{} print(gc\PYZus{}tex)}
+\PY{c+c1}{\PYZsh{} print(ut\PYZus{}tex)}
 \PY{c+c1}{\PYZsh{} print(u\PYZus{}tex)}
 \end{Verbatim}
 \end{tcolorbox}
@@ -1212,7 +1215,7 @@ optimizer has to handle. Imagine what would happen if we tried solving
 the aerostructural program using IDF.
 
 However, there is a silver lining. The solution is a feasible one since
-the target variables \(\hat{\mathbf{u}}^t\) match the true state
+the target variables \(\hat{\mathbf{u}}^t\) match the true coupling
 variables \(\hat{\mathbf{u}}\) obtained from the MDA.
 
 The XDSM for the IDF optimization approach and its corresponding block
@@ -1306,7 +1309,7 @@ violating the consistency constraints.
 
 going back to our numerical example, we can see that \(u\) is a shared
 variable, while \(v\) and \(w\) are discipline variables. The system
-level problem gets a copy of the state variable estimates from
+level problem gets a copy of the coupling variable estimates from
 disciplines 2 and 1 as \(\hat{a}^t\) and \(\hat{b}^t\), respectively,
 while it gets the actual estimates \(\hat{a}\) and \(\hat{b}\) from
 disciplines 1 and 2, respectively.
@@ -1365,10 +1368,10 @@ as
 Going back to our numerical example, for discipline 1, we have no local
 objectives \(f_1\) or constraints \(\mathbf{g}_1\). It will get a copy
 of the shared variable \(u\) as \(u_1^t\). It has its own local design
-variables \(v\), and its own state variable estimate \(\hat{a}\)
+variables \(v\), and its own coupling variable estimate \(\hat{a}\)
 obtained by solving \(\hat{a} - \mathcal{U}_1(u_1^t,v,\hat{b}^t)=0\). It
-gets a copy of the state variables estimate from the system level
-problem (0) as \(\hat{a}^t\) and \(\hat{b}^t\). So now we have
+gets a copy of the coupling variables from the system level problem (0)
+as \(\hat{a}^t\) and \(\hat{b}^t\). So now we have
 
 \begin{align*}
 \mathbf{x}_{0,1}^t & = \left[u_1^t\right]^\mathrm{T}\\
@@ -1396,11 +1399,11 @@ For discipline 2, we have no local objectives \(f_2\). We have a local
 constraint
 \(\mathbf{g}_2 = \left[g({u}_2^t,w,\hat{b})\right]^\mathrm{T}\).
 Discipline 2 will get a copy of the shared variable \(u\) as \(u_2^t\).
-It has its own local design variables \(w\), and its own state variable
-estimate \(\hat{b}\) obtained by solving
+It has its own local design variables \(w\), and its own coupling
+variable \(\hat{b}\) obtained by solving
 \(\hat{b} - \mathcal{U}_2(u_2^t,w,\hat{a}^t)=0\). It gets a copy of the
-state variables estimate from the system level problem (0) as
-\(\hat{a}^t\) and \(\hat{b}^t\). So now we have
+coupling variables from the system level problem (0) as \(\hat{a}^t\)
+and \(\hat{b}^t\). So now we have
 
 \begin{align*}
 \mathbf{g}_2 & = \left[g(\hat{u}_2^t,w,\hat{b})\right]^\mathrm{T}\\
@@ -1536,11 +1539,11 @@ ATC can be found in the file \url{atc.py}.
 \PY{n}{u0} \PY{o}{=} \PY{l+m+mf}{1.0}\PY{p}{;} \PY{n}{v0} \PY{o}{=} \PY{l+m+mf}{1.0}\PY{p}{;} \PY{n}{w0} \PY{o}{=} \PY{l+m+mf}{1.0}\PY{p}{;} \PY{n}{a0} \PY{o}{=} \PY{l+m+mf}{1.0}\PY{p}{;} \PY{n}{b0} \PY{o}{=} \PY{l+m+mf}{1.0}
 \PY{n}{x0\PYZus{}init} \PY{o}{=} \PY{p}{[}\PY{n}{u0}\PY{p}{,}\PY{p}{]} \PY{c+c1}{\PYZsh{} initial guess for shared variable (u)}
 \PY{n}{xi\PYZus{}init} \PY{o}{=} \PY{p}{[}\PY{p}{[}\PY{n}{v0}\PY{p}{,}\PY{p}{]}\PY{p}{,}\PY{p}{[}\PY{n}{w0}\PY{p}{,}\PY{p}{]}\PY{p}{]} \PY{c+c1}{\PYZsh{} initial guess for local variables (v and w)}
-\PY{n}{u\PYZus{}init} \PY{o}{=} \PY{p}{[}\PY{p}{[}\PY{n}{a0}\PY{p}{,}\PY{p}{]}\PY{p}{,}\PY{p}{[}\PY{n}{b0}\PY{p}{,}\PY{p}{]}\PY{p}{]} \PY{c+c1}{\PYZsh{} initial guess for state variables (a and b)}
+\PY{n}{u\PYZus{}init} \PY{o}{=} \PY{p}{[}\PY{p}{[}\PY{n}{a0}\PY{p}{,}\PY{p}{]}\PY{p}{,}\PY{p}{[}\PY{n}{b0}\PY{p}{,}\PY{p}{]}\PY{p}{]} \PY{c+c1}{\PYZsh{} initial guess for coupling variables (a and b)}
 
 \PY{n}{lbs} \PY{o}{=} \PY{p}{[}\PY{l+m+mf}{0.0}\PY{p}{,}\PY{p}{]}\PY{p}{;} \PY{n}{ubs} \PY{o}{=} \PY{p}{[}\PY{l+m+mf}{10.}\PY{p}{,}\PY{p}{]} \PY{c+c1}{\PYZsh{} bounds of shared variable (u)}
 \PY{n}{lbi} \PY{o}{=} \PY{p}{[}\PY{p}{[}\PY{l+m+mf}{0.0}\PY{p}{,}\PY{p}{]}\PY{p}{,} \PY{p}{[}\PY{l+m+mf}{0.0}\PY{p}{,}\PY{p}{]}\PY{p}{]}\PY{p}{;} \PY{n}{ubi} \PY{o}{=} \PY{p}{[}\PY{p}{[}\PY{l+m+mf}{10.}\PY{p}{,}\PY{p}{]}\PY{p}{,} \PY{p}{[}\PY{l+m+mf}{10.}\PY{p}{,}\PY{p}{]}\PY{p}{]} \PY{c+c1}{\PYZsh{} bounds of local variables (v and w)}
-\PY{n}{lbu} \PY{o}{=} \PY{p}{[}\PY{p}{[}\PY{l+m+mf}{0.0}\PY{p}{,}\PY{p}{]}\PY{p}{,} \PY{p}{[}\PY{l+m+mf}{0.0}\PY{p}{,}\PY{p}{]}\PY{p}{]}\PY{p}{;} \PY{n}{ubu} \PY{o}{=} \PY{p}{[}\PY{p}{[}\PY{l+m+mf}{10.}\PY{p}{,}\PY{p}{]}\PY{p}{,} \PY{p}{[}\PY{l+m+mf}{10.}\PY{p}{,}\PY{p}{]}\PY{p}{]} \PY{c+c1}{\PYZsh{} bounds of state variables (a and b)}
+\PY{n}{lbu} \PY{o}{=} \PY{p}{[}\PY{p}{[}\PY{l+m+mf}{0.0}\PY{p}{,}\PY{p}{]}\PY{p}{,} \PY{p}{[}\PY{l+m+mf}{0.0}\PY{p}{,}\PY{p}{]}\PY{p}{]}\PY{p}{;} \PY{n}{ubu} \PY{o}{=} \PY{p}{[}\PY{p}{[}\PY{l+m+mf}{10.}\PY{p}{,}\PY{p}{]}\PY{p}{,} \PY{p}{[}\PY{l+m+mf}{10.}\PY{p}{,}\PY{p}{]}\PY{p}{]} \PY{c+c1}{\PYZsh{} bounds of coupling variables (a and b)}
 
 \PY{n}{opt\PYZus{}options} \PY{o}{=} \PY{p}{\PYZob{}}
     \PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{seed}\PY{l+s+s2}{\PYZdq{}}\PY{p}{:} \PY{l+m+mi}{0}\PY{p}{,} 
@@ -1574,14 +1577,14 @@ were solved as part of the main system-level optimization problem.
 \PY{n}{x\PYZus{}tex} \PY{o}{=} \PY{l+s+sa}{r}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{\PYZdl{}}\PY{l+s+s2}{\PYZbs{}}\PY{l+s+s2}{mathbf}\PY{l+s+si}{\PYZob{}x\PYZcb{}}\PY{l+s+s2}{\PYZca{}*\PYZdl{} = \PYZdl{}[}\PY{l+s+si}{\PYZpc{}.4f}\PY{l+s+s2}{\PYZti{}\PYZti{}}\PY{l+s+si}{\PYZpc{}.4f}\PY{l+s+s2}{\PYZti{}\PYZti{}}\PY{l+s+si}{\PYZpc{}.4f}\PY{l+s+s2}{]\PYZca{}}\PY{l+s+s2}{\PYZbs{}}\PY{l+s+s2}{mathrm}\PY{l+s+si}{\PYZob{}T\PYZcb{}}\PY{l+s+s2}{\PYZdl{}}\PY{l+s+s2}{\PYZdq{}} \PY{o}{\PYZpc{}}\PY{p}{(}\PY{n}{x0}\PY{p}{[}\PY{l+m+mi}{0}\PY{p}{]}\PY{p}{,}\PY{n}{xi}\PY{p}{[}\PY{l+m+mi}{0}\PY{p}{]}\PY{p}{[}\PY{l+m+mi}{0}\PY{p}{]}\PY{p}{,}\PY{n}{xi}\PY{p}{[}\PY{l+m+mi}{1}\PY{p}{]}\PY{p}{[}\PY{l+m+mi}{0}\PY{p}{]}\PY{p}{)}
 \PY{n}{display}\PY{p}{(}\PY{n}{Latex}\PY{p}{(}\PY{n}{x\PYZus{}tex}\PY{p}{)}\PY{p}{)} \PY{c+c1}{\PYZsh{} optimizer}
 \PY{n}{u\PYZus{}tex} \PY{o}{=} \PY{l+s+sa}{r}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{\PYZdl{}}\PY{l+s+s2}{\PYZbs{}}\PY{l+s+s2}{hat}\PY{l+s+s2}{\PYZob{}}\PY{l+s+s2}{\PYZbs{}}\PY{l+s+s2}{mathbf}\PY{l+s+si}{\PYZob{}u\PYZcb{}}\PY{l+s+s2}{\PYZcb{}(}\PY{l+s+s2}{\PYZbs{}}\PY{l+s+s2}{mathbf}\PY{l+s+si}{\PYZob{}x\PYZcb{}}\PY{l+s+s2}{\PYZca{}*)\PYZdl{} = \PYZdl{}[}\PY{l+s+si}{\PYZpc{}.4f}\PY{l+s+s2}{\PYZti{}\PYZti{}}\PY{l+s+si}{\PYZpc{}.4f}\PY{l+s+s2}{]\PYZca{}}\PY{l+s+s2}{\PYZbs{}}\PY{l+s+s2}{mathrm}\PY{l+s+si}{\PYZob{}T\PYZcb{}}\PY{l+s+s2}{\PYZdl{}}\PY{l+s+s2}{\PYZdq{}} \PY{o}{\PYZpc{}}\PY{p}{(}\PY{n}{u}\PY{p}{[}\PY{l+m+mi}{0}\PY{p}{]}\PY{p}{[}\PY{l+m+mi}{0}\PY{p}{]}\PY{p}{,}\PY{n}{u}\PY{p}{[}\PY{l+m+mi}{1}\PY{p}{]}\PY{p}{[}\PY{l+m+mi}{0}\PY{p}{]}\PY{p}{)}
-\PY{n}{display}\PY{p}{(}\PY{n}{Latex}\PY{p}{(}\PY{n}{u\PYZus{}tex}\PY{p}{)}\PY{p}{)} \PY{c+c1}{\PYZsh{} state variables}
+\PY{n}{display}\PY{p}{(}\PY{n}{Latex}\PY{p}{(}\PY{n}{u\PYZus{}tex}\PY{p}{)}\PY{p}{)} \PY{c+c1}{\PYZsh{} coupling variables}
 \PY{n}{c\PYZus{}tex} \PY{o}{=} \PY{l+s+sa}{r}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{\PYZdl{}}\PY{l+s+s2}{\PYZbs{}}\PY{l+s+s2}{mathbf}\PY{l+s+si}{\PYZob{}g\PYZcb{}}\PY{l+s+s2}{\PYZus{}c(}\PY{l+s+s2}{\PYZbs{}}\PY{l+s+s2}{mathbf}\PY{l+s+si}{\PYZob{}x\PYZcb{}}\PY{l+s+s2}{\PYZca{}*)\PYZdl{} = \PYZdl{}[}\PY{l+s+si}{\PYZpc{}.4f}\PY{l+s+s2}{\PYZti{}\PYZti{}}\PY{l+s+si}{\PYZpc{}.4f}\PY{l+s+s2}{\PYZti{}\PYZti{}}\PY{l+s+si}{\PYZpc{}.4f}\PY{l+s+s2}{]\PYZca{}}\PY{l+s+s2}{\PYZbs{}}\PY{l+s+s2}{mathrm}\PY{l+s+si}{\PYZob{}T\PYZcb{}}\PY{l+s+s2}{\PYZdl{}}\PY{l+s+s2}{\PYZdq{}} \PY{o}{\PYZpc{}}\PY{p}{(}\PY{n}{cx0}\PY{p}{[}\PY{l+m+mi}{0}\PY{p}{]}\PY{p}{,}\PY{n}{cu}\PY{p}{[}\PY{l+m+mi}{0}\PY{p}{]}\PY{p}{,}\PY{n}{cu}\PY{p}{[}\PY{l+m+mi}{1}\PY{p}{]}\PY{p}{)}
 \PY{n}{display}\PY{p}{(}\PY{n}{Latex}\PY{p}{(}\PY{n}{c\PYZus{}tex}\PY{p}{)}\PY{p}{)} \PY{c+c1}{\PYZsh{} inconsistencies}
 \PY{n}{g2\PYZus{}tex} \PY{o}{=} \PY{l+s+sa}{r}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{\PYZdl{}}\PY{l+s+s2}{\PYZbs{}}\PY{l+s+s2}{mathbf}\PY{l+s+si}{\PYZob{}g\PYZcb{}}\PY{l+s+s2}{\PYZus{}2(}\PY{l+s+s2}{\PYZbs{}}\PY{l+s+s2}{mathbf}\PY{l+s+si}{\PYZob{}x\PYZcb{}}\PY{l+s+s2}{\PYZca{}*)\PYZdl{} = \PYZdl{}[}\PY{l+s+si}{\PYZpc{}.4f}\PY{l+s+s2}{]\PYZca{}}\PY{l+s+s2}{\PYZbs{}}\PY{l+s+s2}{mathrm}\PY{l+s+si}{\PYZob{}T\PYZcb{}}\PY{l+s+s2}{\PYZdl{}}\PY{l+s+s2}{\PYZdq{}} \PY{o}{\PYZpc{}}\PY{p}{(}\PY{n}{g21}\PY{p}{(}\PY{n}{x0}\PY{p}{,}\PY{n}{xi}\PY{p}{,}\PY{n}{u}\PY{p}{[}\PY{l+m+mi}{1}\PY{p}{]}\PY{p}{)}\PY{p}{)}
 \PY{n}{display}\PY{p}{(}\PY{n}{Latex}\PY{p}{(}\PY{n}{g2\PYZus{}tex}\PY{p}{)}\PY{p}{)} \PY{c+c1}{\PYZsh{} local constraint}
 \PY{c+c1}{\PYZsh{} print(f\PYZus{}tex) \PYZsh{} minimum}
 \PY{c+c1}{\PYZsh{} print(x\PYZus{}tex) \PYZsh{} optimizer}
-\PY{c+c1}{\PYZsh{} print(u\PYZus{}tex) \PYZsh{} state variables}
+\PY{c+c1}{\PYZsh{} print(u\PYZus{}tex) \PYZsh{} coupling variables}
 \PY{c+c1}{\PYZsh{} print(c\PYZus{}tex) \PYZsh{} inconsistencies}
 \PY{c+c1}{\PYZsh{} print(g2\PYZus{}tex) \PYZsh{} local constraint}
 \end{Verbatim}
