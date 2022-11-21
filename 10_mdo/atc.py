@@ -1,60 +1,50 @@
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Union
 import OMADS
 import numpy as np
 import json
+from copy import deepcopy
 
 def get_by_address(address):
     return [x for x in globals().values() if id(x)==address]
 
 class ATC():
 
-    def __init__(self,disciplines:List[callable],f_global:callable,g_global:callable,f_local:List[callable],
-        g_local:List[callable],x0_init:List[float],xi_init:List[float],u_init:List[List[float]],
-        lbs:List[float],ubs:List[float],lbi:List[float],ubi:List[float],lbu:List[List[float]],ubu:List[List[float]],
-        gamma:float=0.1,beta:float=1.3,w0:float=0.5,v0:float=0.5,
-        opt_options:Dict[str,Any]=None):
+    def __init__(self,disciplines:List[callable],P_global:callable,P_local:List[callable],
+        variables:List[Dict[str,Union[str,float,int]]],gamma:float=0.1,beta:float=1.3,
+        w0:float=1.0,v0:float=0.0,opt_options:Dict[str,Any]=None):
 
         self.disciplines = disciplines
+        self.P_global = P_global
+        assert len(P_local) == len(disciplines) # make sure there are as many disciplines as subproblems
+        self.P_local = P_local
         self.n_disciplines = len(disciplines)
-        self.f_local = f_local
-        self.g_local = g_local
-        self.f_global = f_global
-        self.g_global = g_global
-        
-        # shared variables
-        self.x0_init = np.array(x0_init)
-        self.lbs = lbs
-        self.ubs = ubs
-        self.n_shared = len(x0_init)
+        self._variables = variables
 
-        # local variables
-        self.xi_init = [np.array(xik_init) for xik_init in xi_init]
-        self.lbi = lbi
-        self.ubi = ubi
-        self.n_local = [len(xi) for xi in xi_init]
+        # make shared targets
+        for i in range(self.n_disciplines):
+            x0t_dicts = deepcopy(self.get_x("shared"))
+            for d in x0t_dicts:
+                d["target"] = True
+                d["subproblem"] = i+1
+                self._variables += [d]
 
-        # state variable
-        self.u_init = u_init
-        self.lbu = lbu
-        self.ubu = ubu
-        self.n_states = [len(ui) for ui in u_init]
+        # make coupling targets
+        for i in range(self.n_disciplines):
+            ut_dicts = deepcopy(self.get_x("coupling"))
+            for d in ut_dicts:
+                d["target"] = True
+                d["subproblem"] = i+1
+                self._variables += [d]
+
+        # set initial weights
+        self.set_target(w0,"shared","w",subproblem=[1,2])
+        self.set_target(v0,"shared","v",subproblem=[1,2])
+        self.set_target(w0,"coupling","w",subproblem=[1,2])
+        self.set_target(v0,"coupling","v",subproblem=[1,2])
 
         # default penalty weights
         self.gamma = gamma
         self.beta = beta
-
-        # initialization
-        self.x0 = np.array(x0_init)
-        self.xi = [np.array(xik_init) for xik_init in xi_init]
-        self.u = [np.array(ui_init) for ui_init in u_init]
-        self.ut = [np.array(ui_init) for ui_init in u_init] # copy state variables
-        self.x0t = [np.array(x0_init),]*self.n_disciplines # copy shared variables
-        
-        # inconsistency to updated during coordination
-        self.wx0 = [w0*np.ones(len(x0_init)),]*self.n_disciplines
-        self.wu = [w0*np.ones(len(ui_init)) for ui_init in u_init]
-        self.vx0 = [v0*np.ones(len(x0_init)),]*self.n_disciplines
-        self.vu = [v0*np.ones(len(ui_init)) for ui_init in u_init]
         
         self.cu = [np.zeros_like(ui_init) for ui_init in u_init] # copy state variables
         self.cx0 = [np.zeros_like(x0_init),]*self.n_disciplines # copy shared variables
@@ -62,10 +52,6 @@ class ATC():
         self.cx0_old = [np.zeros_like(x0_init),]*self.n_disciplines # copy shared variables
 
         # penalty values
-        self.F_total_old = 0.
-        self.F_total = 0.
-        self.phi_old = [0.,]*self.n_disciplines
-        self.phi = [0.,]*self.n_disciplines
         self.n_evaluations = [0,]*(self.n_disciplines+1)
 
         self.opt_options = {
@@ -74,6 +60,64 @@ class ATC():
             "opportunistic": False
         } if opt_options == None else opt_options
         self.optimizer = OMADS.main
+
+    def get_x(self,var_type:str,var_attribute:str=None) -> Union[np.ndarray,List[Any]]:
+        """get shared variables"""
+
+        variables = [var for var in self._variables if var["type"] == var_type and not var["target"]]
+
+        if var_attribute in ["value","w","v"]:
+            return np.array([var[var_attribute] for var in variables])
+        elif var_attribute == None:
+            return variables
+        else:
+            return [var[var_attribute] for var in variables]
+
+    def set_x(self,x:Union[List,np.ndarray,float,int],var_type:str,var_attribute:str):
+        """update shared variables"""
+        var_index = [i for i,var in enumerate(self._variables) if var["type"] == var_type and not var["target"]]
+        if isinstance(x,(list,np.ndarray)):
+            assert len(x) == len(var_index)
+            for i,xi in zip(var_index,x):
+                self._variables[i][var_attribute] = xi
+        elif isinstance(x,(float,int)):
+            for i in var_index:
+                self._variables[i][var_attribute] = x
+
+    def get_target(self,var_type:str,var_attribute:str=None,subproblem:Union[int,List[int]]=None) -> Union[np.ndarray,List[Any]]:
+        """get shared variables"""
+        
+        if subproblem is None:
+            variables = [var for var in self._variables if var["type"] == var_type and var["target"]]
+        elif isinstance(subproblem,int):
+            variables = [var for var in self._variables if var["type"] == var_type and var["subproblem"] == subproblem and var["target"]]
+        elif isinstance(subproblem,list):
+            variables = [var for var in self._variables if var["type"] == var_type and var["subproblem"] in subproblem and var["target"]]
+
+        if var_attribute in ["value","w","v"]:
+            return np.array([var[var_attribute] for var in variables])
+        elif var_attribute == None:
+            return variables
+        else:
+            return [var[var_attribute] for var in variables]
+
+    def set_target(self,x:Union[List,np.ndarray,float,int],var_type:str,var_attribute:str,subproblem:Union[int,List[int]]=None):
+        """update shared variables"""
+
+        if subproblem is None:
+            var_index = [i for i,var in enumerate(self._variables) if var["type"] == var_type and var["target"]]
+        elif isinstance(subproblem,int):
+            var_index = [i for i,var in enumerate(self._variables) if var["type"] == var_type and var["subproblem"] == subproblem and var["target"]]
+        elif isinstance(subproblem,list):
+            var_index = [i for i,var in enumerate(self._variables) if var["type"] == var_type and var["subproblem"] in subproblem and var["target"]]
+
+        if isinstance(x,(list,np.ndarray)):
+            assert len(x) == len(var_index)
+            for i,xi in zip(var_index,x):
+                self._variables[i][var_attribute] = xi
+        elif isinstance(x,(float,int)):
+            for i in var_index:
+                self._variables[i][var_attribute] = x
 
     def _flatten(self,l:List[List[float]]) -> List[float]:
         return [item for sublist in l for item in sublist]
@@ -318,36 +362,51 @@ class ATC():
 
 if __name__ == "__main__":
 
+    def prob0(x0,x,u):
+        """This is the system level problem"""
+        u1 = u[0] # coupling variable from SP1
+        u2 = u[1] # coupling variable from SP2
+        x1 = x[0] # local variable from SP1
+        x2 = x[1] # local variable from SP2 (unused)
+
+        f = x0[0] + x1[0] + u1[0] + u2[0] # global objective
+        g = [0,] # global constraints (none)
+        return [f,g]
+
+    def prob1(x0,xi,ui):
+        """This is the subsystem 1 problem"""
+        f = 0 # local objective (none)
+        g = [0,] # local constraints (none)
+        return [f,g]
+
+    def prob2(x0,xi,ui):
+        """This is the subsystem 2 problem"""
+        f = 0 # local objective (none)
+        g = [xi[0] + ui[0] - 10,] # local constraints
+        return [f,g]
+
     # these are your coupled disciplines
-    U1 = lambda x0,xi,u: np.array([np.log(x0[0]+1e-6) + np.log(xi[0]+1e-6) + np.log(u[1][0]+1e-6)])
-    U2 = lambda x0,xi,u: np.array([1/(x0[0]+1e-6) + 1/(xi[0]+1e-6) + 1/(u[0][0]+1e-6)])
-    f = lambda x0,x,u: x0[0] + x[0][0] + u[0][0] + u[1][0]
-    g = lambda x0,x,u: x[1][0] + u[1][0] - 10 # is not using the shared variable (but could in practice)
-    g21 = lambda x0,xi,ui: xi[0] + ui[0] - 10 # is not using the shared variable (but could in practice)
+    def discpline_1(x0,xi,u):
+        """This is the discpline 1 analysis"""
+        u2 = u[1] # target variable coming from other discipline
+        u1 = [np.log(x0[0]+1e-6) + np.log(xi[0]+1e-6) + np.log(u2[0]+1e-6),] # 1e-6 to avoid log(0) errors
+        return np.array(u1)
 
-    # system optimization problem
-    f_global = f
-    g_global = [0,] # no global constraints
-    # sub-system 1 optimization problem
-    f1 = 0 # no local objective
-    g1 = [0,] # no local constraints
-    # sub-system 2 optimization problem
-    f2 = 0 # no local objective
-    g2 = [g21,]
+    def discpline_2(x0,xi,u):
+        """This is the discpline 2 analysis"""
+        u1 = u[0] # target variable coming from other discipline
+        u2 = [1/(x0[0]+1e-6) + 1/(xi[0]+1e-6) + 1/(u1[0]+1e-6),] # 1e-6 to avoid division by zero errors
+        return np.array(u2)
 
-    f_local = [f1,f2]
-    g_local = [g1,g2]
-    disciplines = [U1,U2]
-
-    u0 = 1.0; v0 = 1.0; w0 = 1.0; a0 = 1.0; b0 = 1.0
-    x0_init = [u0,] # initial guess for shared variable (u)
-    xi_init = [[v0,],[w0,]] # initial guess for local variables (v and w)
-    u_init = [[a0,],[b0,]] # initial guess for state variables (a and b)
-
-    lbs = [0.0,]; ubs = [10.,] # bounds of shared variable (u)
-    lbi = [[0.0,], [0.0,]]; ubi = [[10.,], [10.,]] # bounds of local variables (v and w)
-    lbu = [[0.0,], [0.0,]]; ubu = [[10.,], [10.,]] # bounds of state variables (a and b)
-
+    # Variable definitions
+    variables = [
+        {"name": "u", "type": "shared", "subproblem": 0, "target": False, "value": 1.0, "lb": 0.0, "ub": 10.0},
+        {"name": "v", "type": "local", "subproblem": 1, "target": False,  "value": 1.0, "lb": 0.0, "ub": 10.0},
+        {"name": "w", "type": "local", "subproblem": 2, "target": False,  "value": 1.0, "lb": 0.0, "ub": 10.0},
+        {"name": "a", "type": "coupling", "subproblem": 1, "target": False,  "value": 1.0, "lb": 0.0, "ub": 10.0},
+        {"name": "b", "type": "coupling", "subproblem": 2, "target": False,  "value": 1.0, "lb": 0.0, "ub": 10.0},
+    ]
+    # optimization algorithm options
     opt_options = {
         "seed": 0, 
         "budget": 1000, 
@@ -355,10 +414,8 @@ if __name__ == "__main__":
         "display": False, 
         "opportunistic": False
     }
-    my_atc = ATC(disciplines=disciplines,f_global=f_global, 
-        g_global=g_global,f_local=f_local,g_local=g_local,x0_init=x0_init,
-        xi_init=xi_init,u_init=u_init,lbs=lbs,ubs=ubs,lbi=lbi,ubi=ubi,
-        lbu=lbu,ubu=ubu,opt_options=opt_options,w0=0.1,v0=0.1,
+    my_atc = ATC(disciplines=[discpline_1,discpline_2],P_global=prob0, 
+        P_local=[prob1,prob2],variables=variables,opt_options=opt_options,w0=1.0,v0=0.0,
         beta=1.1,gamma=0.1)
     x0,cx0,xi,u,cu,phi,f = my_atc.run_atc(k_max=200,tol=1e-6)
 
