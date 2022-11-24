@@ -54,7 +54,8 @@ def Blackbox_call(x, *argv):
     command_str = "-x "+" ".join(map(str, x))+" -p "+" ".join(map(str, bb_params["parameters"]))
     if bb_params["use_gradients"]:
         command_str += " -G -v"
-    command = "./bb "+command_str
+    command = "./bb "+command_str # <--------------------------------for MacOS/Linux
+    # command = "bb "+command_str # <--------------------------------for windows
 
     if not bb_params["use_surrogate"]:
         #####################

@@ -200,11 +200,11 @@ Manifest.toml
 
 # Executables
 *.exe
+!bb.exe
 *.out
 *.app
 *output.txt
 *log.txt
-bb
 *.json
 
 # Visual studio
@@ -226,7 +226,7 @@ build/
 
 #################################################################
 # 3rd party libraries (SML)
-*.db
+*.db*
 */post/*
 post/
 
@@ -234,6 +234,7 @@ post/
 # generated latex files
 *.tex
 !mdo_intro.tex
+!SBJ_example.tex
 *.tikz
 *.aux
 *.synctex.gz
