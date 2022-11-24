@@ -37,6 +37,12 @@ void program_options::parse(int argc, char* argv[]) {
             continue;
         }
 
+        if (arg == "-h" || arg == "--help") {
+            _current_arg = arg;
+            throw std::runtime_error("help requested:");
+            continue;
+        }
+
         if (_variables.empty()) {
             if (arg == "-x" || arg == "--variables") {
                 _current_arg = arg;
