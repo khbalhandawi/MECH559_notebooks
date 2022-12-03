@@ -18,7 +18,7 @@ def read_output(file):
 
 def try_remove(filename):
     # Delete files
-    if not os.path.isfile(filename):
+    if os.path.isfile(filename):
         os.remove(filename)
 
 def system_command(command):
