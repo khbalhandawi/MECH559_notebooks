@@ -37,13 +37,13 @@
 To install Jupyter you need to have an existing Python installation (Anaconda or otherwise). You may then use the following commands in the console
 
 * Linux/MacOS
-```
+```bash
 pip3 install jupyter
 python3 -m pip install --upgrade webio_jupyter_extension
 ```
 
 * Windows
-```
+```bash
 pip install jupyter
 python -m pip install --upgrade webio_jupyter_extension
 ```
@@ -54,7 +54,7 @@ The Julia interpreter and compiler can be downloaded from [http://julialang.org/
 
 Julia can be installed on major OS: Windows, MacOS X, Linux. Under Windows, it is possible to launch Julia via the start menu or, if present, by clicking on the appropriate icon. Under Linux, to launch the Julia interpreter in interactive mode, just enter at the terminal level
 
-```
+```bash
 Julia
 ```
 
@@ -64,7 +64,7 @@ Note for windows: Be sure to check the "add to PATH" option during installation 
 
 use the following command to install all the prerequisite packages for this course
 
-```
+```Julia
 using Pkg
 Pkg.add.(["IJulia", "WebIO", "Interact", "LaTeXStrings", "Plots", "PyPlot", "LatinHypercubeSampling", "MLBase", "Surrogates", "CSV"])
 ```
@@ -75,15 +75,21 @@ Pkg.add.(["IJulia", "WebIO", "Interact", "LaTeXStrings", "Plots", "PyPlot", "Lat
 
 Create a virtual environment where you can install the required packages for this class locally
 
-```
+```bash
 python -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
 ```
 
 **Windows**
-```
+```bash
 python -m venv .env
 .env\Scripts\activate
 pip install -r requirements.txt
+```
+
+After setting up your virtual environment you need to add it to the list of jupyter kernels. Inside jupyter go to `select kernel` and select `.env` from the list of environments
+
+```bash
+ipython kernel install --user --name=.env
 ```
