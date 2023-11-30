@@ -31,7 +31,7 @@ class GradientDesc(Optimization):
     def __init__(self,f:Callable[[np.ndarray,], np.ndarray],grad_f:Callable[[np.ndarray,], np.ndarray],
         H_f:Callable[[np.ndarray,], np.ndarray]=None,x0:np.ndarray=np.array([[0.0,0.0]]),
         epsilon:float=0.1,beta:float=0.9,direction:str="steepest",alpha:float=1.0,line_search:str="armijo",
-        hessian_approximation:str="BFGS",verbose:bool=False):
+        hessian_approximation:str="BFGS",cholesky:bool=False,verbose:bool=False):
         """
         GradientDesc is class object used for defining various gradient descent algorithms. You must first
         initialize an `instance` of this class like so:
@@ -91,6 +91,7 @@ class GradientDesc(Optimization):
         self.alpha = alpha
         self.line_search = line_search
         self.hessian_approximation = hessian_approximation
+        self.cholesky = cholesky
 
         # initialize
         if self.direction == "newton":
@@ -142,11 +143,18 @@ class GradientDesc(Optimization):
         if self.direction == "newton":
             self.Hk = self.H_f(self.xk).squeeze(axis=2)
 
-            try:
-                Bk_true = np.linalg.inv(self.Hk)
-            except LinAlgError:
-                Bk_true = np.eye(self.ndim)
-                warnings.warn("Singular true matrix, setting Bk_true to the identity matrix")
+            try:  
+                # Try Cholesky factorization  
+                if self.cholesky == True:
+                    self.Hk = np.linalg.cholesky(self.Hk)  
+                Bk_true = np.linalg.inv(self.Hk)  
+            except np.linalg.LinAlgError:  
+                # If not positive definite, add regularization  
+                min_eig = np.min(np.real(np.linalg.eigvals(self.Hk)))  
+                self.Hk -= 10*min_eig*np.eye(*self.Hk.shape)  
+                # Recompute inverse after regularization  
+                Bk_true = np.linalg.inv(self.Hk)  
+                warnings.warn("Hessian was not positive definite, added regularization")
 
             error_BFGS = ((self.Bk - Bk_true)**2).mean(axis=None)
         elif self.direction == "steepest":
@@ -182,7 +190,7 @@ class GradientDesc(Optimization):
         self.xk = self.xk + sk
         # Update Hessian approximation
         if self.hessian_approximation == "exact" and self.direction == "newton":
-            self.Bk = np.linalg.inv(self.H_f(self.xk).squeeze(axis=2))
+            self.Bk = Bk_true
         elif self.hessian_approximation == "BFGS" and self.direction == "newton":
             yk = self.grad_f(self.xk).squeeze(axis=2) - self.grad_fk
             self.Bk = self.Bk + (((sk.T @ yk + yk.T @ self.Bk @ yk) * (sk @ sk.T)) / ((sk.T @ yk)**2)) - \
