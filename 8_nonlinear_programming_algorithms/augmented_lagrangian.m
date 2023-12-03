@@ -8,8 +8,8 @@
 clear all
 clc
 clf
-addpath('../../plotting_functions')
-addpath('../../plotting_functions/hatchfill2_r8')
+addpath('../plotting_functions')
+addpath('../plotting_functions/hatchfill2_r8')
 global lambda
 
 %% Visualizing the optimization problem
