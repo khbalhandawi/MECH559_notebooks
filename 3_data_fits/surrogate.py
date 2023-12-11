@@ -84,7 +84,7 @@ class RBF(AbstractSurrogate):
         self.J[0,0] = 0
 
     def Gaussian(self, λ, ζ, X):
-        return np.exp(-λ * norm(ζ - X,axis=1))[:,None]
+        return np.exp(-λ * norm(ζ - X,axis=1)**2)[:,None]
 
     def basis(self, λ, Z):
         return np.hstack([self.Gaussian(λ, z, self.X) for z in Z])
